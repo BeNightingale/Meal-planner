@@ -28,7 +28,6 @@ public class Meal {
             this.ingredientsList
                     .forEach(ing -> stringBuilder.append(ing).append("\n"));
         }
-        stringBuilder.append("The meal has been added!");
         return stringBuilder.toString();
     }
 }
