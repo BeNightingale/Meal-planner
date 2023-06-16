@@ -4,14 +4,36 @@ import java.util.List;
 
 public class Meal {
 
+    private final Integer id;
     private final String category;
     private final String name;
     private final List<String> ingredientsList;
 
-    public Meal(String category, String name, List<String> ingredientsList) {
+    public Meal(Integer id, String category, String name, List<String> ingredientsList) {
+        this.id = id;
         this.category = category;
         this.name = name;
         this.ingredientsList = ingredientsList;
+    }
+
+    public Meal(String category, String name, List<String> ingredientsList) {
+        this(null, category, name, ingredientsList);
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<String> getIngredientsList() {
+        return ingredientsList;
     }
 
     @Override
