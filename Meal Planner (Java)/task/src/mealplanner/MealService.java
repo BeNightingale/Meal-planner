@@ -35,17 +35,46 @@ public class MealService {
     }
 
     private void showMeals() {
-        final List<Meal> mealsList = findMeals();
-        if (mealsList.isEmpty()) {
-            System.out.println("No meals saved. Add a meal first.");
+        final String category = Order.makeCorrectPrintChoice();
+        final List<Meal> mealList = findMealsByCategory(category);
+        if (mealList.isEmpty()) {
+            System.out.println("No meals found.");
             return;
         }
-        for (Meal meal : mealsList) {
-            System.out.println(meal);
+        System.out.println("Category: " + category);
+        if (mealList.size() == 1) {
+            mealList.get(0).printMeal();
+            return;
+        }
+        System.out.println();
+        for (Meal meal : mealList) {
+            meal.printMeal();
+            System.out.println();
         }
     }
 
-    private List<Meal> findMeals() {
+    private List<Meal> findMealsByCategory(String category) {
+        final String selectMealsByCategorySql = "SELECT * FROM meals WHERE category = ?";
+        final List<Meal> mealList = new ArrayList<>();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(selectMealsByCategorySql)) {
+            preparedStatement.setString(1, category);
+            final ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                final Meal meal = asMeal(resultSet);
+                mealList.add(meal);
+            }
+        } catch (SQLException sqlEx) {
+            System.out.println("It was't possible to get meals list from database " + sqlEx);
+            return Collections.emptyList();
+        }
+        mealList.forEach(
+                meal -> meal.getIngredientsList()
+                        .addAll(findMealIngredients(meal.getId()))
+        );
+        return mealList;
+    }
+
+    public List<Meal> findMeals() {
         final String selectMealsSql = "SELECT * FROM meals";
         final List<Meal> mealList = new ArrayList<>();
         try (final Statement statement = connection.createStatement()) {

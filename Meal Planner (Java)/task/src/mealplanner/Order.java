@@ -65,6 +65,18 @@ public class Order {
         return scanner.nextLine();
     }
 
+    protected static String makeCorrectPrintChoice() {
+        String category = makePrintChoice("Which category do you want to print (breakfast, lunch, dinner)?");
+        while (!isMealCategoryValid(category))
+            category = makePrintChoice("Wrong meal category! Choose from: breakfast, lunch, dinner.");
+        return category;
+    }
+
+    private static String makePrintChoice(String message) {
+        System.out.println(message);
+        return scanner.nextLine();
+    }
+
     // VALIDATION METHODS
 
     private static boolean isChoiceValid(String choice) {

@@ -30,11 +30,7 @@ subprojects {
 
     dependencies {
         testImplementation 'com.github.hyperskill:hs-test:release-SNAPSHOT'
-        // https://mvnrepository.com/artifact/org.postgresql/postgresql
-   //     implementation 'org.postgresql:postgresql:42.3.4'
-        // https://mvnrepository.com/artifact/org.postgresql/postgresql
-        implementation group: 'org.postgresql', name: 'postgresql', version: '42.6.0'
-
+        implementation 'org.postgresql:postgresql:42.2.10'
     }
 
     configurations.all {
@@ -60,9 +56,6 @@ subprojects {
 project(':util') {
     dependencies {
         implementation 'com.github.hyperskill:hs-test:release-SNAPSHOT'
-        // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    //    testImplementation 'org.postgresql:postgresql:42.3.4'
-        testImplementation group: 'org.postgresql', name: 'postgresql', version: '42.6.0'
     }
 }
 

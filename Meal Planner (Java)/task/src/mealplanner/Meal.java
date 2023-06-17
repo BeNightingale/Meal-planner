@@ -36,20 +36,32 @@ public class Meal {
         return ingredientsList;
     }
 
+    public void printMeal() {
+        final StringBuilder stringBuilder = new StringBuilder();
+        addIngredientsToStringBuilder(stringBuilder, this);
+        System.out.println(stringBuilder);
+    }
     @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("Category: ")
                 .append(this.category)
                 .append("\n")
-                .append("Name: ")
-                .append(this.name)
+                //.append("Id: ")
+               // .append(this.id)
+        .append("\n");
+        addIngredientsToStringBuilder(stringBuilder, this);
+        return stringBuilder.toString();
+    }
+
+    private void addIngredientsToStringBuilder(StringBuilder stringBuilder, Meal meal) {
+        stringBuilder.append("Name: ")
+                .append(meal.name)
                 .append("\n")
                 .append("Ingredients: \n");
-        if (this.ingredientsList != null) {
-            this.ingredientsList
-                    .forEach(ing -> stringBuilder.append(ing).append("\n"));
+        if (meal.ingredientsList != null) {
+            meal.ingredientsList
+                    .forEach(ingredient -> stringBuilder.append(ingredient).append("\n"));
         }
-        return stringBuilder.toString();
     }
 }
