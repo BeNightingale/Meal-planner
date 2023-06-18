@@ -4,7 +4,7 @@ import java.util.*;
 
 public class Order {
 
-    private static final String SPLITER = ", ";
+    private static final String SPLITER = ",";
     private static final String COMMAND_USE_LETTERS = "Wrong format. Use letters only!";
     private static final Scanner scanner = new Scanner(System.in);
 
@@ -47,6 +47,7 @@ public class Order {
             ingredientsString = scanner.nextLine();
         }
         String[] ingredients = ingredientsString.split(SPLITER);
+        Arrays.stream(ingredients).forEach(String::trim);
         while (areIngredientsNotValid(ingredients)) {
             System.out.println(COMMAND_USE_LETTERS);
             ingredientsString = scanner.nextLine();
@@ -61,7 +62,7 @@ public class Order {
     }
 
     private static String actionChoice() {
-        System.out.println("What would you like to do (add, show, exit)?");
+        System.out.println("What would you like to do (add, show, plan, exit)?");
         return scanner.nextLine();
     }
 
@@ -72,15 +73,40 @@ public class Order {
         return category;
     }
 
+    protected static List<String> makeCorrectMealNameChoice(Map<String, Integer> mealNamesMap, String weekDayName, String mealCategoryName) {
+        String mealNameChoice = null;
+        final List<String> mealNamesList = new ArrayList<>(mealNamesMap.keySet());
+        Collections.sort(mealNamesList);
+        if (!mealNamesList.isEmpty()) {
+            printMealNamesList(mealNamesList);
+            System.out.printf("Choose the %s for %s from the list above:%n", mealCategoryName, weekDayName);
+            mealNameChoice = scanner.nextLine();
+            while (!isMealNameInMealNamesList(mealNamesList, mealNameChoice)) {
+                System.out.println("This meal doesn’t exist. Choose a meal from the list above.");
+                mealNameChoice = scanner.nextLine();
+            }
+            final Integer mealChoiceId = mealNamesMap.get(mealNameChoice);
+
+            return List.of(mealNameChoice, mealChoiceId == null ? "-1" : mealChoiceId.toString());
+        } else {
+            System.out.printf("No meals to choose for %s. ", mealCategoryName);
+            return Collections.emptyList();
+        }
+    }
+
     private static String makePrintChoice(String message) {
         System.out.println(message);
         return scanner.nextLine();
     }
 
+    private static void printMealNamesList(Collection<String> mealNamesList) {
+        mealNamesList.forEach(System.out::println);
+    }
+
     // VALIDATION METHODS
 
     private static boolean isChoiceValid(String choice) {
-        final List<String> possibleChoices = Arrays.asList("add", "show", "exit");
+        final List<String> possibleChoices = Arrays.asList("add", "show", "plan", "exit");
         return possibleChoices.contains(choice);
     }
 
@@ -101,5 +127,9 @@ public class Order {
     private static boolean areIngredientsNotValid(String[] ingredients) {
         return Arrays.stream(ingredients).anyMatch(Order::isInputNotAWord) ||
                 Arrays.stream(ingredients).anyMatch(ingredient -> ingredient == null || ingredient.isEmpty());
+    }
+
+    private static boolean isMealNameInMealNamesList(Collection<String> mealNamesList, String mealNameChoice) {
+        return mealNamesList != null && !mealNamesList.isEmpty() && mealNamesList.contains(mealNameChoice);
     }
 }
