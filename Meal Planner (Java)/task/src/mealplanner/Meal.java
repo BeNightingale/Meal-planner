@@ -41,15 +41,16 @@ public class Meal {
         addIngredientsToStringBuilder(stringBuilder, this);
         System.out.println(stringBuilder);
     }
+
     @Override
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("Category: ")
                 .append(this.category)
-                .append("\n")
-                //.append("Id: ")
-               // .append(this.id)
-        .append("\n");
+                .append("\n");
+             //   .append("Id: ")
+             //   .append(this.id)
+             //   .append("\n");
         addIngredientsToStringBuilder(stringBuilder, this);
         return stringBuilder.toString();
     }
@@ -61,7 +62,7 @@ public class Meal {
                 .append("Ingredients: \n");
         if (meal.ingredientsList != null) {
             meal.ingredientsList
-                    .forEach(ingredient -> stringBuilder.append(ingredient).append("\n"));
+                    .forEach(ingredient -> stringBuilder.append(ingredient.trim()).append("\n"));
         }
     }
 }
