@@ -15,9 +15,10 @@ public class Main {
         final String PASS = "1111";
 
         try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
-             final Statement statement = connection.createStatement();) {
+             final Statement statement = connection.createStatement()) {
             connection.setAutoCommit(true);
             final MealService mealService = new MealService(connection);
+            final Repository repository = new Repository(connection);
 //            Possibility of cleaning everything in tables
 //            statement.executeUpdate("DROP SEQUENCE IF EXISTS meals_sequence");
 //            statement.executeUpdate("DROP TABLE meals");
@@ -50,9 +51,18 @@ public class Main {
                 choice = Order.forceToMakeChoice();
             }
             mealService.actionMap.get(choice).run();
+
             // Possibility of showing all meals
-//          final List<Meal> meals = mealService.findMeals();
-//          meals.stream().forEach(System.out::println);
+//          final List<Meal> meals = mealService.mealRepository.findMeals();
+//            meals.forEach(
+//                    meal -> meal.getIngredientsList()
+//                            .addAll(repository.findMealIngredients(meal.getId()))
+//            );
+//          meals.forEach(System.out::println);
+//            final List<DayPlan> weekPlan = mealService.getWeekPlan();
+//            System.out.println(weekPlan);
+//            System.out.println("Printowanie planu: ");
+//            weekPlan.forEach(DayPlan::printDayPlan);
         } catch (SQLException e) {
             throw new InvalidDataBaseProcessException("Exception during database process, " + e.getMessage());
         }

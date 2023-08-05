@@ -62,7 +62,7 @@ public class Order {
     }
 
     private static String actionChoice() {
-        System.out.println("What would you like to do (add, show, plan, exit)?");
+        System.out.println("What would you like to do (add, show, plan, save, exit)?");
         return scanner.nextLine();
     }
 
@@ -74,7 +74,7 @@ public class Order {
     }
 
     protected static List<String> makeCorrectMealNameChoice(Map<String, Integer> mealNamesMap, String weekDayName, String mealCategoryName) {
-        String mealNameChoice = null;
+        String mealNameChoice;
         final List<String> mealNamesList = new ArrayList<>(mealNamesMap.keySet());
         Collections.sort(mealNamesList);
         if (!mealNamesList.isEmpty()) {
@@ -94,6 +94,11 @@ public class Order {
         }
     }
 
+    protected static String getShoppingListFileName() {
+        System.out.println("Input a filename:");
+        return scanner.nextLine();
+    }
+
     private static String makePrintChoice(String message) {
         System.out.println(message);
         return scanner.nextLine();
@@ -103,10 +108,23 @@ public class Order {
         mealNamesList.forEach(System.out::println);
     }
 
+    protected static String printShoppingList(Map<String, Integer> ingredientsGroupedByEqualValueMap) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        ingredientsGroupedByEqualValueMap.forEach((key, value) -> {
+            stringBuilder.append(key);
+            if (value > 1) {
+                stringBuilder.append(" x").append(value).append("\n");
+            } else {
+                stringBuilder.append("\n");
+            }
+        });
+        return stringBuilder.toString();
+    }
+
     // VALIDATION METHODS
 
     private static boolean isChoiceValid(String choice) {
-        final List<String> possibleChoices = Arrays.asList("add", "show", "plan", "exit");
+        final List<String> possibleChoices = Arrays.asList("add", "show", "plan", "save", "exit");
         return possibleChoices.contains(choice);
     }
 

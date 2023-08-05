@@ -47,10 +47,10 @@ public class Meal {
         final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("Category: ")
                 .append(this.category)
+                .append("\n")
+                .append("Id: ")
+                .append(this.id)
                 .append("\n");
-             //   .append("Id: ")
-             //   .append(this.id)
-             //   .append("\n");
         addIngredientsToStringBuilder(stringBuilder, this);
         return stringBuilder.toString();
     }

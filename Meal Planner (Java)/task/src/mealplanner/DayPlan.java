@@ -1,27 +1,31 @@
 package mealplanner;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DayPlan {
     private final WeekDay weekDay;
-    private final Map<MealCategory, String> mealsMap; //key=category; value=meal name
+    private final Map<MealCategory, String> mealsMap; // key=category; value=meal name
+    private final List<Integer> mealIdsList;
 
     public DayPlan(WeekDay weekDay) {
         this.weekDay = weekDay;
         this.mealsMap = new LinkedHashMap<>();
-    }
-
-    public WeekDay getDayName() {
-        return weekDay;
+        this.mealIdsList = new ArrayList<>();
     }
 
     public Map<MealCategory, String> getMealsMap() {
         return mealsMap;
     }
 
+    public List<Integer> getMealIdsList() {
+        return mealIdsList;
+    }
+
     public void printDayPlan() {
-        StringBuilder stringBuilder = new StringBuilder();
+        final StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(this.weekDay.getDayName())
                 .append("\n");
         if (!this.mealsMap.isEmpty()) {

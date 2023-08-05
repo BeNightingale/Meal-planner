@@ -1,27 +1,42 @@
 package mealplanner;
 
-import java.sql.*;
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.Map.entry;
 
 public class MealService {
 
-    private static final String ERROR_DURING_GETTING_INFORMATION_ABOUT_MEALS = "It was't possible to get information about meals list from database ";
+
     private final Runnable add = this::addMeal;
     private final Runnable show = this::showMeals;
     private final Runnable exit = this::exit;
     private final Runnable plan = this::planMeals;
+    private final Runnable save = this::saveShoppingList;
 
     protected final Map<String, Runnable> actionMap = Map.ofEntries(
             entry("add", add),
             entry("show", show),
             entry("exit", exit),
-            entry("plan", plan));
+            entry("plan", plan),
+            entry("save", save));
     final Connection connection;
+    private final MealRepository mealRepository;
+    private final Repository repository;
+
 
     public MealService(Connection connection) {
         this.connection = connection;
+        this.mealRepository = new MealRepository(connection);
+        this.repository = new Repository(connection);
     }
 
     private void addMeal() {
@@ -39,7 +54,11 @@ public class MealService {
 
     private void showMeals() {
         final String category = Order.makeCorrectPrintChoice();
-        final List<Meal> mealList = findMealsByCategory(category);
+        final List<Meal> mealList = mealRepository.findMealsByCategory(category);
+        mealList.forEach(
+                meal -> meal.getIngredientsList()
+                        .addAll(repository.findMealIngredients(meal.getId()))
+        );
         if (mealList.isEmpty()) {
             System.out.println("No meals found.");
             return;
@@ -57,6 +76,11 @@ public class MealService {
     }
 
     private void planMeals() {
+        try {
+            repository.cleanPlanTable();
+        } catch (SQLException sqlEx) {
+            System.out.println("Nie można wyczyścić tabeli plan" + sqlEx);
+        }
         for (WeekDay day : WeekDay.values()) {
             final String dayName = day.getDayName();
             System.out.println(dayName);
@@ -76,138 +100,54 @@ public class MealService {
     private void planCategoryForDay(WeekDay weekDay, MealCategory mealCategory) {
         final String mealCategoryName = mealCategory.getCategoryName();
         final String weekDayName = weekDay.getDayName();
-        final Map<String, Integer> mealNamesMap = findMealNamesByCategory(mealCategoryName);
+        final Map<String, Integer> mealNamesMap = mealRepository.findMealNamesAndIdsByCategory(mealCategoryName);
         final List<String> mealChoice = Order.makeCorrectMealNameChoice(mealNamesMap, weekDayName, mealCategoryName);
         if (mealChoice.isEmpty()) {
             System.out.println("mealChoice is empty!!!");
         } else {
-            savePlannedMeal(mealChoice.get(0), mealCategoryName, Integer.parseInt(mealChoice.get(1)), weekDayName);
+            repository.savePlannedMeal(mealChoice.get(0), mealCategoryName, Integer.parseInt(mealChoice.get(1)), weekDayName);
         }
     }
 
-    private List<DayPlan> getWeekPlan() {
-        return Arrays.stream(WeekDay.values()).map(this::getPlanForDay).toList();
+    protected List<DayPlan> getWeekPlan() {
+        return Arrays.stream(WeekDay.values()).map(repository::getPlanForDay).toList();
     }
 
-    private Map<String, Integer> findMealNamesByCategory(String category) {
-        final String selectMealsByCategorySql = "SELECT meal, meal_id FROM meals WHERE category = ?";
-        final Map<String, Integer> mealNameMap = new LinkedHashMap<>();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(selectMealsByCategorySql)) {
-            preparedStatement.setString(1, category.toLowerCase());
-            final ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                final String mealName = resultSet.getString(1);
-                final Integer mealId = resultSet.getInt(2);
-                mealNameMap.put(mealName, mealId); // mealName should be unique for a given category
-            }
-        } catch (SQLException sqlEx) {
-            System.out.println(ERROR_DURING_GETTING_INFORMATION_ABOUT_MEALS + sqlEx);
-            return Collections.emptyMap();
-        }
-        return mealNameMap;
+    protected List<Integer> getMealsIdsListForWeekPlan(List<DayPlan> weekPlan) {
+        return weekPlan.stream().flatMap(dayPlan -> dayPlan.getMealIdsList().stream()).toList();
     }
 
-    private void savePlannedMeal(String mealName, String mealCategory, Integer mealId, String weekDayName) {
-        if (mealCategory == null || mealCategory.isEmpty() || mealId == null || weekDayName == null || weekDayName.isEmpty()) {
-            throw new IllegalArgumentException(String.format("Planning this meal is impossible - empty parameter; " +
-                    "mealCategory = %s, mealId = %d, weekDayName = %s.%n", mealCategory, mealId, weekDayName));
-        }
-        final String insertMealPlanSql = "INSERT INTO plan (meal_option, meal_category, meal_id, day) VALUES (?, ?, ?, ?)";
-
-        try (PreparedStatement preparedStatement = connection.prepareStatement(insertMealPlanSql)) {
-            preparedStatement.setString(1, mealName);
-            preparedStatement.setString(2, mealCategory);
-            preparedStatement.setInt(3, mealId);
-            preparedStatement.setString(4, weekDayName);
-            preparedStatement.executeUpdate();
-        } catch (SQLException | NullPointerException ex) {
-            System.out.println("Error during inserting planned meal " + ex);
-        }
+    private boolean areMealsPlannedForWeek() {
+        return repository.getPlannedMealsNumberInWeek() == 21;
     }
 
-    private List<Meal> findMealsByCategory(String category) {
-        final String selectMealsByCategorySql = "SELECT * FROM meals WHERE category = (?)";
-        final List<Meal> mealList = new ArrayList<>();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(selectMealsByCategorySql)) {
-            preparedStatement.setString(1, category);
-            final ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                final Meal meal = asMeal(resultSet);
-                mealList.add(meal);
-            }
-        } catch (SQLException sqlEx) {
-            System.out.println(ERROR_DURING_GETTING_INFORMATION_ABOUT_MEALS + sqlEx);
-            return Collections.emptyList();
+    private void saveShoppingList() {
+        final List<DayPlan> weekPlan = getWeekPlan();
+        if (!areMealsPlannedForWeek()) {
+            System.out.println("Unable to save. Plan your meals first.");
+            return;
         }
-        mealList.forEach(
-                meal -> meal.getIngredientsList()
-                        .addAll(findMealIngredients(meal.getId()))
+        final String fileName = Order.getShoppingListFileName();
+        final List<Integer> mealsIdsList = getMealsIdsListForWeekPlan(weekPlan);
+        final Map<Integer, Integer> mealsIdsGroupedByEqualMealsIdMap = Utils.groupListByEqualValues(mealsIdsList);
+
+        final List<Integer> distinctMealsIdsList = Utils.getListWithDistinctValues(mealsIdsList);
+        final Map<String, Integer> ingredientsGroupedByEqualValueMap = new HashMap<>();
+
+        distinctMealsIdsList.forEach(mealId -> {
+                    final List<String> mealIngredients = repository.findMealIngredients(mealId);
+                    final Integer mealsNumberWithThisId = mealsIdsGroupedByEqualMealsIdMap.get(mealId) == null ?
+                            0 : mealsIdsGroupedByEqualMealsIdMap.get(mealId);
+                    Utils.completeMapWithGroupingValues(ingredientsGroupedByEqualValueMap, mealIngredients, mealsNumberWithThisId);
+                }
         );
-        return mealList;
-    }
-
-    public List<Meal> findMeals() {
-        final String selectMealsSql = "SELECT * FROM meals";
-        final List<Meal> mealList = new ArrayList<>();
-        try (final Statement statement = connection.createStatement()) {
-            final ResultSet resultSet = statement.executeQuery(selectMealsSql);
-            while (resultSet.next()) {
-                final Meal meal = asMeal(resultSet);
-                mealList.add(meal);
-            }
-        } catch (SQLException sqlEx) {
-            System.out.println(ERROR_DURING_GETTING_INFORMATION_ABOUT_MEALS + sqlEx);
-            return Collections.emptyList();
+        final String content = Order.printShoppingList(ingredientsGroupedByEqualValueMap);
+        try {
+            createFile(fileName, content);
+        } catch (Exception e) {
+            System.out.println("Error");
         }
-        mealList.forEach(
-                meal -> meal.getIngredientsList()
-                        .addAll(findMealIngredients(meal.getId()))
-        );
-        return mealList;
-    }
-
-    private Meal asMeal(ResultSet resultSet) throws SQLException {
-        return new Meal(
-                resultSet.getInt(3),
-                resultSet.getString(1),
-                resultSet.getString(2),
-                new ArrayList<>()
-        );
-    }
-
-    private DayPlan getPlanForDay(WeekDay weekDay) {
-        final String selectMealsSql = "SELECT meal_option, meal_category FROM plan WHERE day = ?";
-        final DayPlan dayPlan = new DayPlan(weekDay);
-        try (final PreparedStatement preparedStatement = connection.prepareStatement(selectMealsSql)) {
-            preparedStatement.setString(1, weekDay.getDayName());
-            final ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                final String mealName = resultSet.getString(1);
-                final String mealCategory = resultSet.getString(2);
-                dayPlan.getMealsMap().put(MealCategory.valueOf(mealCategory.toUpperCase()), mealName);
-            }
-        } catch (SQLException sqlEx) {
-            System.out.println(ERROR_DURING_GETTING_INFORMATION_ABOUT_MEALS + sqlEx);
-            return dayPlan;
-        }
-        return dayPlan;
-    }
-
-    private List<String> findMealIngredients(int mealId) {
-        final String selectIngredientsSql = "SELECT (ingredient) FROM ingredients WHERE meal_id = (?)";
-        final List<String> mealIngerdientsList = new ArrayList<>();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(selectIngredientsSql)) {
-            preparedStatement.setInt(1, mealId);
-            final ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                final String ingredient = resultSet.getString(1);
-                mealIngerdientsList.add(ingredient);
-            }
-            return mealIngerdientsList;
-        } catch (SQLException sqlEx) {
-            System.out.println("It wasn't possible to get ingredients for a meal with id " + mealId + ", " + sqlEx);
-            return Collections.emptyList();
-        }
+        System.out.println("Saved!");
     }
 
     private void exit() {
@@ -215,44 +155,17 @@ public class MealService {
     }
 
     private void insertMeal(Meal meal) {
-        int mealId = insertMealInformation(meal);
-        insertIngredientInformation(meal, mealId);
+        int mealId = mealRepository.insertMealInformation(meal);
+        repository.insertIngredientInformation(meal, mealId);
     }
 
-    // returns mealId or -1 when error
-    private int insertMealInformation(Meal meal) {
-        if (meal == null) {
-            return -1;
-        }
-        final String insertSqlIntoMealsTable = "INSERT INTO meals (category, meal, meal_id) VALUES " +
-                "(?, ?, nextval('meals_sequence')) RETURNING meal_id";
-        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSqlIntoMealsTable)) {
-            preparedStatement.setString(1, meal.getCategory());
-            preparedStatement.setString(2, meal.getName());
-            final ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next())
-                return resultSet.getInt(1); //"RETURNING" returns a table with 1 column which has meal_id
-        } catch (SQLException | NullPointerException ex) {
-            System.out.println("Error " + ex);
-            return -1;
-        }
-        return -1;
-    }
-
-    private void insertIngredientInformation(Meal meal, int mealId) {
-        if (meal == null)
-            return;
-        final String insertSqlIntoIngredientsTable = "INSERT INTO ingredients (ingredient, ingredient_id, meal_id)" +
-                " VALUES (?, nextval('ingredients_sequence'), ?)";
-        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSqlIntoIngredientsTable)) {
-            final List<String> ingredientsList = meal.getIngredientsList();
-            for (String ingredient : ingredientsList) {
-                preparedStatement.setString(1, ingredient);
-                preparedStatement.setInt(2, mealId);
-                preparedStatement.executeUpdate();
+    private void createFile(String fileName, String content) throws IOException {
+        final File file = new File(fileName); // for JetBrain Academy tests
+        //final File file = new File("./Meal Planner (Java)/task/src/resources", fileName); // saving for me
+        if (file.createNewFile()) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                writer.append(content);
             }
-        } catch (Exception e) {
-            System.out.println("error!   " + e);
         }
     }
 }
