@@ -1,4 +1,7 @@
-package mealplanner;
+package mealplanner.model;
+
+import mealplanner.MealCategory;
+import mealplanner.WeekDay;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

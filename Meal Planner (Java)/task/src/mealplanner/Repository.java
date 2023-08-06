@@ -1,5 +1,8 @@
 package mealplanner;
 
+import mealplanner.model.DayPlan;
+import mealplanner.model.Meal;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -103,7 +106,7 @@ public class Repository {
         }
     }
 
-    protected List<String> findMealIngredients(int mealId) {
+    public List<String> findMealIngredients(int mealId) {
         final String selectIngredientsSql = "SELECT (ingredient) FROM ingredients WHERE meal_id = (?)";
         final List<String> mealIngerdientsList = new ArrayList<>();
         try (PreparedStatement preparedStatement = connection.prepareStatement(selectIngredientsSql)) {

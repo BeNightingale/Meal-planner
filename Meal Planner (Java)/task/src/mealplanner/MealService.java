@@ -1,5 +1,9 @@
 package mealplanner;
 
+import mealplanner.model.DayPlan;
+import mealplanner.model.Meal;
+import mealplanner.utils.Utils;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -113,7 +117,7 @@ public class MealService {
         }
     }
 
-    protected List<DayPlan> getWeekPlan() {
+    public List<DayPlan> getWeekPlan() {
         return Arrays.stream(WeekDay.values()).map(repository::getPlanForDay).toList();
     }
 
@@ -164,8 +168,8 @@ public class MealService {
     }
 
     private void createFile(String fileName, String content) throws IOException {
-        final File file = new File(fileName); // for JetBrain Academy tests
-        //final File file = new File("./Meal Planner (Java)/task/src/resources", fileName); // saving for me
+        //final File file = new File(fileName); // for JetBrain Academy tests
+        final File file = new File("./Meal Planner (Java)/task/src/resources", fileName); // saving for me
         if (file.createNewFile()) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
                 writer.append(content);

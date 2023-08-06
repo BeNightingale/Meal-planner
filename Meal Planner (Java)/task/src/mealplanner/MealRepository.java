@@ -1,5 +1,7 @@
 package mealplanner;
 
+import mealplanner.model.Meal;
+
 import java.sql.*;
 import java.util.*;
 
@@ -69,7 +71,7 @@ public class MealRepository {
         return mealList;
     }
 
-    protected List<Meal> findMeals() {
+    public List<Meal> findMeals() {
         final String selectMealsSql = "SELECT * FROM meals";
         final List<Meal> mealList = new ArrayList<>();
         try (final Statement statement = connection.createStatement()) {
