@@ -1,5 +1,8 @@
 package mealplanner;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,5 +31,22 @@ public class Utils {
 
     static <T> List<T> getListWithDistinctValues(List<T> list) {
         return list.stream().distinct().toList();
+    }
+
+    static void showAllMeals(MealService mealService, Connection connection) {
+        final Repository repository = new Repository(connection);
+        final List<Meal> meals = mealService.getMealRepository().findMeals();
+        meals.forEach(
+                meal -> meal.getIngredientsList()
+                        .addAll(repository.findMealIngredients(meal.getId()))
+        );
+        meals.forEach(System.out::println);
+    }
+
+    static void showMealsWeekPlan(MealService mealService) {
+        final List<DayPlan> weekPlan = mealService.getWeekPlan();
+        System.out.println(weekPlan);
+        System.out.println("Meal Plan for the whole week: ");
+        weekPlan.forEach(DayPlan::printDayPlan);
     }
 }

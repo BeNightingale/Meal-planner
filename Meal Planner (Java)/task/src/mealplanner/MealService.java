@@ -39,6 +39,10 @@ public class MealService {
         this.repository = new Repository(connection);
     }
 
+    public MealRepository getMealRepository() {
+        return mealRepository;
+    }
+
     private void addMeal() {
         final Meal meal = new Meal(
                 Order.specifyMeal(),
